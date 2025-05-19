@@ -107,7 +107,7 @@ def test_aktualizovat_ukol_pozitivni(db_connection):
 
 
 # Test aktualizovani ukolu, vlozeni neplatnych hodnot
-def test_aktualizovat_ukol_null_stav_1048(db_connection):
+def test_aktualizovat_ukol(db_connection):
     cursor = db_connection.cursor()
 
     # Vložení testovacího úkolu (stav má default)

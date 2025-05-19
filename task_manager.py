@@ -103,6 +103,39 @@ def zobrazit_ukoly():
         conn.close()
     
 
+# Pomocna funkce pro vybrani id 
+def vybrat_ukol_id(cursor):
+    cursor.execute("SELECT id, nazev FROM ukoly")
+    ukoly = cursor.fetchall()
+    if not ukoly:
+        print("\n⚠️  Seznam úkolů je prázdný.")
+        return None
+
+    print("\n📋  Seznam úkolů:")
+    for index, ukol in enumerate(ukoly, 1):
+        print(f"{index}. ID: {ukol[0]} | Název: {ukol[1]}")
+
+    while True:
+        volba = input("\nZadejte ID úkolu: ").strip()
+        if not volba.isdigit():
+            print("\n⚠️  Zadejte číselné ID.")
+            continue
+        id_ukolu = int(volba)
+        cursor.execute("SELECT id FROM ukoly WHERE id = %s", (id_ukolu,))
+        if cursor.fetchone():
+            return id_ukolu
+        else:
+            print("\n⚠️  Úkol s tímto ID neexistuje.")
+
+
+# Funkce, ktera zmeni "probiha", "probihá" a "probíha" na "probíhá"
+def normalizuj_stav(stav):
+    stav = stav.strip().lower()
+    if stav in ["probiha", "probihá", "probíha"]:
+        return "probíhá"
+    return stav
+
+
 # Aktualizauje úkol
 def aktualizovat_ukol():
     conn = connect_db()
@@ -112,52 +145,25 @@ def aktualizovat_ukol():
     try:
         cursor = conn.cursor()
 
-        # Získat všechny úkoly pro výběr
-        cursor.execute("SELECT id, nazev, stav FROM ukoly")
-        ukoly = cursor.fetchall()
-
-        if not ukoly:
-            print("\n⚠️  Žádné úkoly k aktualizaci.")
+        id_ukolu = vybrat_ukol_id(cursor)
+        if id_ukolu is None:
             return
-        
-        # Zobrazit úkoly s ID, názvem a stavem
-        print("\n📋  Seznam úkolů:")
-        for index, ukol in enumerate(ukoly, 1):
-            print(f"{index}. ID: {ukol[0]} | Název: {ukol[1]} | Stav: {ukol[2]}")
 
-        # Výběr ID úkolu k aktualizaci
-        while True:
-            vybrane_id = input("\nZadejte ID úkolu, který chcete aktualizovat: ").strip()
-            
-            if not vybrane_id.isdigit():
-                print("\n⚠️  Zadejte číselné ID.")
-                continue
-            
-            # Ověření, zda ID existuje
-            vybrane_id = int(vybrane_id)
-            cursor.execute("SELECT id FROM ukoly WHERE id = %s", (vybrane_id,))
-            if cursor.fetchone():
-                break
-            else:
-                print("\n⚠️  Úkol s tímto ID neexistuje. Zkuste znovu.")
-
-        # Výběr nového stavu
         while True:
             novy_stav = input("\nZadejte nový stav ('hotovo' nebo 'probíhá'): ")
+            novy_stav = normalizuj_stav(novy_stav)
             if novy_stav in ['hotovo', 'probíhá']:
                 break
             else:
                 print("\n⚠️  Neplatný stav. Zadejte pouze 'probíhá' nebo 'hotovo'.")
             
-        # Aktualizace v databázi
-        cursor.execute('UPDATE ukoly SET stav = %s WHERE id = %s', (novy_stav, vybrane_id))
+        cursor.execute('UPDATE ukoly SET stav = %s WHERE id = %s', (novy_stav, id_ukolu))
         conn.commit()
 
         print("\n✅  Stav úkolu byl aktualizován.")
 
-
     except mysql.connector.Error as error:
-        print(f"\n❌  Chyba při zobrazování úkolů: {error}")
+        print(f"\n❌  Chyba při aktualizaci úkolu: {error}")
         
     finally:
         cursor.close()
@@ -171,43 +177,18 @@ def odstranit_ukol():
         return
     
     try:
-        # Získat úkoly pro odstranění
         cursor = conn.cursor()
-        cursor.execute("SELECT id, nazev FROM ukoly")
-        ukoly = cursor.fetchall()
-
-        if not ukoly:
-            print("\n⚠️  Není co odstranit. Seznam úkolů je prázdný.")
+        id_ukolu = vybrat_ukol_id(cursor)
+        if id_ukolu is None:
             return
-        
-        # Zobrazit úkoly s ID a názvem
-        print("\n📋  Seznam úkolů:")
-        for index, ukol in enumerate (ukoly, 1):
-            print(f"{index}. ID: {ukol[0]} | Název: {ukol[1]}")
-        
-        # Výběr ID úkolu k aktualizaci
-        while True:
-            volba = input("\nZadejte ID úkolu, který chcete odstranit: ")
-            if not volba.isdigit():
-                print("\n⚠️  Zadejte číselné ID.")
-                continue
 
-            # Ověření, že úkol existuje
-            id_ukolu = int(volba)
-            cursor.execute("SELECT id FROM ukoly WHERE id = %s", (id_ukolu,))
-            if not cursor.fetchone():
-                print("\n⚠️  Úkol s tímto ID neexistuje.")
-                continue
-
-            # Potvrzení před smazáním úkolu
-            potvrzeni = input(f"\nOpravdu chcete odstranit úkol s ID {id_ukolu}? (a/n): ").strip().lower()
-            if potvrzeni == "a":
-                cursor.execute("DELETE FROM ukoly WHERE id = %s", (id_ukolu,))
-                conn.commit()
-                print("\n🗑️  Úkol byl úspěšně odstraněn.")
-            else:
-                print("ℹ️  Odstranění zrušeno.")
-            break
+        potvrzeni = input(f"\nOpravdu chcete odstranit úkol s ID {id_ukolu}? (a/n): ").strip().lower()
+        if potvrzeni == "a":
+            cursor.execute("DELETE FROM ukoly WHERE id = %s", (id_ukolu,))
+            conn.commit()
+            print("\n🗑️  Úkol byl úspěšně odstraněn.")
+        else:
+            print("ℹ️  Odstranění zrušeno.")
     
     except mysql.connector.Error as error:
         print(f"❌  Chyba při odstraňování úkolu: {error}")
