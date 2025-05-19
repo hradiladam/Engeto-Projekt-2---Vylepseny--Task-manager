@@ -18,7 +18,7 @@ def db_connection():
         host="localhost",
         user="root",
         password="ABtmdz247!",
-        database="spravce_ukolu_test"  # odělená testovací databáze
+        database="spravce_ukolu_test"  # Oddělená testovací databáze
     )
     yield conn # Zpřístupní připojení testovací funkci, která jej použije
     conn.close()
@@ -107,7 +107,7 @@ def test_aktualizovat_ukol_pozitivni(db_connection):
 
 
 # Test aktualizovani ukolu, vlozeni neplatnych hodnot
-def test_aktualizovat_ukol(db_connection):
+def test_aktualizovat_ukol_negativni(db_connection):
     cursor = db_connection.cursor()
 
     # Vložení testovacího úkolu (stav má default)
@@ -149,7 +149,7 @@ def test_odstranit_ukol_pozitivni(db_connection):
     id_ukolu = cursor.lastrowid
 
     try:
-        # 2. Smazani ukolu
+        # Smazani ukolu
         cursor.execute("DELETE FROM ukoly WHERE id = %s", (id_ukolu,))
         db_connection.commit()
 
