@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 import pytest
-from test_init import create_test_db_and_table, drop_test_db
+from tests.test_init import create_test_db_and_table, drop_test_db
 
 
 # Fixture, ktera vytvori db a tabulku pred testy
